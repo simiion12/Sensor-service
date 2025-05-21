@@ -1,0 +1,30 @@
+# Core Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.1
+
+# Async MQTT client
+gmqtt==0.6.11
+aiomqtt>=1.2.0
+
+
+# Async PostgreSQL + ORM
+SQLAlchemy==2.0.30
+asyncpg==0.29.0
+
+# Redis async
+redis==5.0.4
+
+# Kafka
+aiokafka==0.12.0
+
+# Pydantic models
+pydantic==2.9.1
+pydantic-settings==2.2.1
+
+# Alembic for DB migrations
+alembic==1.13.1
+
+# Optional for local dev + testing
+python-dotenv==1.0.1
+httpx==0.27.0
+pytest==8.2.1
