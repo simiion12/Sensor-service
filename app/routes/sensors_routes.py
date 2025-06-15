@@ -135,8 +135,7 @@ async def get_water_status_endpoint(device_id: int = 1, db: AsyncSession = Depen
     if not latest_sensor_data:
         return {"status": "perfect"}
 
-    water_status = get_water_status(latest_sensor_data.water_level or 100)
-    return {"status": water_status}
+    return {"status": latest_sensor_data.water_level or 100}
 
 
 @router.get("/beans/{device_id}")
@@ -160,8 +159,7 @@ async def get_beans_status_endpoint(device_id: int = 1, db: AsyncSession = Depen
     if not latest_sensor_data:
         return {"status": "perfect"}
 
-    beans_status = get_beans_status(latest_sensor_data.beans_level)
-    return {"status": beans_status}
+    return {"status": latest_sensor_data.beans_level}
 
 
 @router.get("/cleaning/{device_id}")
@@ -174,8 +172,7 @@ async def get_cleaning_status_endpoint(device_id: int = 1, db: AsyncSession = De
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
 
-    cleaning_status = get_cleaning_status(device.last_cleaning_time)
-    return {"status": cleaning_status}
+    return {"status": device.last_cleaning_time}
 
 
 @router.get("/cups/{device_id}")
@@ -188,8 +185,7 @@ async def get_cups_status_endpoint(device_id: int = 1, db: AsyncSession = Depend
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
 
-    cups_status = get_cups_status(device.numbers_of_coffee or 0)
-    return {"status": cups_status}
+    return {"status": device.numbers_of_coffee or 0}
 
 @router.get("/statistics/{device_id}", response_model=DeviceStatistics)
 async def get_device_statistics(device_id: int = 1, db: AsyncSession = Depends(get_db)):
