@@ -192,6 +192,23 @@ class MQTTClient:
                         if len(self.historical_data) > self.max_history_size:
                             self.historical_data.pop(0)
 
+                        # Handle power toggle messages received from ESP32
+                        if payload_data.get("action") == "power_toggle":
+                            async with AsyncSessionLocal() as db:
+                                result = await db.execute(
+                                    select(Device).where(Device.id == 1)
+                                )
+                                device = result.scalar_one_or_none()
+
+                                if device:
+                                    # Use the power_state from the ESP32 message
+                                    power_state = payload_data.get("power_state")
+                                    if power_state is not None:
+                                        device.is_powered_on = power_state
+                                        await db.commit()
+                                        logger.info(
+                                            f"Device power updated from ESP32 to: {'ON' if device.is_powered_on else 'OFF'}")
+
                         await self.save_sensor_data_to_db(payload_data)
 
                     logger.info(f"Received message on topic {topic}: {payload_str}")
