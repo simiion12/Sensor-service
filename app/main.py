@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Coffee Machine Sensor Service")
 
-app.include_router(user_router)
-app.include_router(device_router)
-app.include_router(sensor_router)
-app.include_router(command_router)
+app.include_router(user_router, prefix="/api")
+app.include_router(device_router, prefix="/api")
+app.include_router(sensor_router, prefix="/api")
+app.include_router(command_router, prefix="/api")
 
 @app.get("/")
 async def root():
