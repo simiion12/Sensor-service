@@ -79,6 +79,18 @@ class MQTTClient:
                                     f"Coffee limit exceeded. Available: {device.numbers_of_coffee}, Required: {required_coffee}")
                                 return {"error": "daily_coffee_limit_exceeded", "available": device.numbers_of_coffee}
 
+                        # Update total_active_time for brew commands (API calls)
+                        if command.get("action") == "single_brew":
+                            device.total_active_time = (device.total_active_time or 0) + 0.5
+                            await db.commit()
+                            logger.info(
+                                f"Updated total_active_time (+0.5h): {device.total_active_time}h for single_brew API call")
+                        elif command.get("action") == "double_brew":
+                            device.total_active_time = (device.total_active_time or 0) + 0.75
+                            await db.commit()
+                            logger.info(
+                                f"Updated total_active_time (+0.75h): {device.total_active_time}h for double_brew API call")
+
             # Handle power toggle separately - update database
             if command.get("action") == "power_toggle":
                 async with AsyncSessionLocal() as db:
@@ -209,6 +221,29 @@ class MQTTClient:
                                         logger.info(
                                             f"Device power updated from ESP32 to: {'ON' if device.is_powered_on else 'OFF'}")
 
+                        # Handle button press messages for brew commands
+                        if payload_data.get("action") == "button_pressed":
+                            button_type = payload_data.get("button")
+                            if button_type in ["single_brew", "double_brew"]:
+                                async with AsyncSessionLocal() as db:
+                                    result = await db.execute(
+                                        select(Device).where(Device.id == 1)
+                                    )
+                                    device = result.scalar_one_or_none()
+
+                                    if device:
+                                        # Update total_active_time for button presses
+                                        if button_type == "single_brew":
+                                            device.total_active_time = (device.total_active_time or 0) + 0.5
+                                            await db.commit()
+                                            logger.info(
+                                                f"Updated total_active_time (+0.5h): {device.total_active_time}h for single_brew button press")
+                                        elif button_type == "double_brew":
+                                            device.total_active_time = (device.total_active_time or 0) + 0.75
+                                            await db.commit()
+                                            logger.info(
+                                                f"Updated total_active_time (+0.75h): {device.total_active_time}h for double_brew button press")
+
                         await self.save_sensor_data_to_db(payload_data)
 
                     logger.info(f"Received message on topic {topic}: {payload_str}")
@@ -224,6 +259,5 @@ class MQTTClient:
             await self.connect()
         except Exception as e:
             logger.error(f"Unexpected error in MQTT listener: {e}", exc_info=True)
-
 
 mqtt_client = MQTTClient()
