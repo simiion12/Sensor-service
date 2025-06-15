@@ -114,78 +114,6 @@ async def get_sensor_data_by_device(device_id: int, db: AsyncSession = Depends(g
     sensor_data = result.scalars().all()
     return sensor_data
 
-@router.get("/water/{device_id}")
-async def get_water_status_endpoint(device_id: int = 1, db: AsyncSession = Depends(get_db)):
-    device_result = await db.execute(
-        select(Device).where(Device.id == device_id)
-    )
-    device = device_result.scalar_one_or_none()
-
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
-
-    sensor_result = await db.execute(
-        select(SensorData)
-        .where(SensorData.device_id == device_id)
-        .order_by(SensorData.timestamp.desc())
-        .limit(1)
-    )
-    latest_sensor_data = sensor_result.scalar_one_or_none()
-
-    if not latest_sensor_data:
-        return {"status": "perfect"}
-
-    return {"status": latest_sensor_data.water_level or 100}
-
-
-@router.get("/beans/{device_id}")
-async def get_beans_status_endpoint(device_id: int = 1, db: AsyncSession = Depends(get_db)):
-    device_result = await db.execute(
-        select(Device).where(Device.id == device_id)
-    )
-    device = device_result.scalar_one_or_none()
-
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
-
-    sensor_result = await db.execute(
-        select(SensorData)
-        .where(SensorData.device_id == device_id)
-        .order_by(SensorData.timestamp.desc())
-        .limit(1)
-    )
-    latest_sensor_data = sensor_result.scalar_one_or_none()
-
-    if not latest_sensor_data:
-        return {"status": "perfect"}
-
-    return {"status": latest_sensor_data.beans_level}
-
-
-@router.get("/cleaning/{device_id}")
-async def get_cleaning_status_endpoint(device_id: int = 1, db: AsyncSession = Depends(get_db)):
-    device_result = await db.execute(
-        select(Device).where(Device.id == device_id)
-    )
-    device = device_result.scalar_one_or_none()
-
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
-
-    return {"status": device.last_cleaning_time}
-
-
-@router.get("/cups/{device_id}")
-async def get_cups_status_endpoint(device_id: int = 1, db: AsyncSession = Depends(get_db)):
-    device_result = await db.execute(
-        select(Device).where(Device.id == device_id)
-    )
-    device = device_result.scalar_one_or_none()
-
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
-
-    return {"status": device.numbers_of_coffee or 0}
 
 @router.get("/statistics/{device_id}", response_model=DeviceStatistics)
 async def get_device_statistics(device_id: int = 1, db: AsyncSession = Depends(get_db)):
@@ -210,25 +138,30 @@ async def get_device_statistics(device_id: int = 1, db: AsyncSession = Depends(g
         return {
             "name": device.device_name or "Magnifica-S",
             "statuses": {
-                "water": {"status": "perfect"},
-                "beans": {"status": "perfect"},
-                "cleaning": {"status": "perfect"},
-                "cups": {"status": "perfect"}
+                "water": {"status": "perfect", "value": 100},
+                "beans": {"status": "perfect", "value": 100},
+                "cleaning": {"status": "perfect", "value": 0},
+                "cups": {"status": "perfect", "value": device.numbers_of_coffee or 0}
             }
         }
 
-    water_status = get_water_status(latest_sensor_data.water_level or 100)
-    beans_status = get_beans_status(latest_sensor_data.beans_level)
-    cups_status = get_cups_status(device.numbers_of_coffee or 0)
+    water_level = latest_sensor_data.water_level or 100
+    beans_level = latest_sensor_data.beans_level
+    coffee_count = device.numbers_of_coffee or 0
+    days_since_cleaning = (datetime.utcnow() - device.last_cleaning_time).days
+
+    water_status = get_water_status(water_level)
+    beans_status = get_beans_status(beans_level)
+    cups_status = get_cups_status(coffee_count)
     cleaning_status = get_cleaning_status(device.last_cleaning_time)
 
     return {
         "name": device.device_name or "Magnifica-S",
         "statuses": {
-            "water": {"status": water_status},
-            "beans": {"status": beans_status},
-            "cleaning": {"status": cleaning_status},
-            "cups": {"status": cups_status}
+            "water": {"status": water_status, "value": water_level},
+            "beans": {"status": beans_status, "value": beans_level},
+            "cleaning": {"status": cleaning_status, "value": days_since_cleaning},
+            "cups": {"status": cups_status, "value": coffee_count}
         }
     }
 
