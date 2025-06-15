@@ -114,6 +114,82 @@ async def get_sensor_data_by_device(device_id: int, db: AsyncSession = Depends(g
     sensor_data = result.scalars().all()
     return sensor_data
 
+@router.get("/water/{device_id}")
+async def get_water_status_endpoint(device_id: int = 1, db: AsyncSession = Depends(get_db)):
+    device_result = await db.execute(
+        select(Device).where(Device.id == device_id)
+    )
+    device = device_result.scalar_one_or_none()
+
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    sensor_result = await db.execute(
+        select(SensorData)
+        .where(SensorData.device_id == device_id)
+        .order_by(SensorData.timestamp.desc())
+        .limit(1)
+    )
+    latest_sensor_data = sensor_result.scalar_one_or_none()
+
+    if not latest_sensor_data:
+        return {"status": "perfect"}
+
+    water_status = get_water_status(latest_sensor_data.water_level or 100)
+    return {"status": water_status}
+
+
+@router.get("/beans/{device_id}")
+async def get_beans_status_endpoint(device_id: int = 1, db: AsyncSession = Depends(get_db)):
+    device_result = await db.execute(
+        select(Device).where(Device.id == device_id)
+    )
+    device = device_result.scalar_one_or_none()
+
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    sensor_result = await db.execute(
+        select(SensorData)
+        .where(SensorData.device_id == device_id)
+        .order_by(SensorData.timestamp.desc())
+        .limit(1)
+    )
+    latest_sensor_data = sensor_result.scalar_one_or_none()
+
+    if not latest_sensor_data:
+        return {"status": "perfect"}
+
+    beans_status = get_beans_status(latest_sensor_data.beans_level)
+    return {"status": beans_status}
+
+
+@router.get("/cleaning/{device_id}")
+async def get_cleaning_status_endpoint(device_id: int = 1, db: AsyncSession = Depends(get_db)):
+    device_result = await db.execute(
+        select(Device).where(Device.id == device_id)
+    )
+    device = device_result.scalar_one_or_none()
+
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    cleaning_status = get_cleaning_status(device.last_cleaning_time)
+    return {"status": cleaning_status}
+
+
+@router.get("/cups/{device_id}")
+async def get_cups_status_endpoint(device_id: int = 1, db: AsyncSession = Depends(get_db)):
+    device_result = await db.execute(
+        select(Device).where(Device.id == device_id)
+    )
+    device = device_result.scalar_one_or_none()
+
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    cups_status = get_cups_status(device.numbers_of_coffee or 0)
+    return {"status": cups_status}
 
 @router.get("/statistics/{device_id}", response_model=DeviceStatistics)
 async def get_device_statistics(device_id: int = 1, db: AsyncSession = Depends(get_db)):
