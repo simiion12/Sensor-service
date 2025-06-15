@@ -1,5 +1,7 @@
 import logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.mqtt_client import mqtt_client
 from app.routes.user_routes import router as user_router
 from app.routes.device_routes import router as device_router
@@ -15,6 +17,13 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Coffee Machine Sensor Service")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(user_router, prefix="/api")
 app.include_router(device_router, prefix="/api")
 app.include_router(sensor_router, prefix="/api")
