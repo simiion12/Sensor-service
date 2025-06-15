@@ -1,20 +1,26 @@
-from datetime import datetime
 from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional
 
 class SensorDataBase(BaseModel):
-    water_level: float
-    beans_level: float
-    numbers_of_coffee: int
-
+    device_id: int
+    water_level: Optional[float] = None
+    beans_level: Optional[float] = None
+    numbers_of_coffee: Optional[int] = 0
 
 class SensorDataCreate(SensorDataBase):
-    device_id: int
+    pass
 
-
-class SensorDataResponse(SensorDataBase):
+class SensorData(SensorDataBase):
     id: int
-    device_id: int
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class DeviceStatus(BaseModel):
+    status: str
+
+class DeviceStatistics(BaseModel):
+    name: str
+    statuses: dict
